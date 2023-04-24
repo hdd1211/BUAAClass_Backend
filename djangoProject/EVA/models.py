@@ -21,6 +21,7 @@ class Evaluation(models.Model):
 
 class College(models.Model):
     name = models.CharField
+    courses
 
 
 class Teacher(models.Model):
