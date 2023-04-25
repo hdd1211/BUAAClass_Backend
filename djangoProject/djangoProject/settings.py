@@ -76,10 +76,10 @@ WSGI_APPLICATION = 'djangoProject.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'testdb',  # 数据库名称
+        'NAME': 'test',  # 数据库名称
         'USER': 'root',  # 名字
-        'PASSWORD': '123456',  # 密码
-        'HOST': 'localhost',  # 可以不写，默认的
+        'PASSWORD': '12345',  # 密码
+        # 'HOST': 'localhost',  # 可以不写，默认的
         'PORT': '3306'  # 可以不写，默认的
     }
 }

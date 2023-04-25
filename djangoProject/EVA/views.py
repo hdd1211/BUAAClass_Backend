@@ -1,7 +1,7 @@
 # Create your views here.
 from django.http import HttpResponse
 
-from models import User_account
+from .models import User_account
 
 
 def index(request):
