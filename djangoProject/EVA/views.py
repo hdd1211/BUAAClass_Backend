@@ -4,6 +4,9 @@ from django.http import HttpResponse, JsonResponse
 from .models import User
 
 
+# def
+
+
 def index(request):
     return HttpResponse("Hello, world. You're at the eva index.")
 

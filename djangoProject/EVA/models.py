@@ -59,8 +59,6 @@ class Course(models.Model):
     workload = models.IntegerField(verbose_name='工作量评分', null=False, unique=True)
     appraisal = models.IntegerField(verbose_name='考核评分', null=False, unique=True)
 
-    # 此处不需要再有一个teacher属性？或是teacher中不需要course属性？(MTMF类型会提供反向调用的参数)
-
 
 class report(models.Model):
     reportid = models.IntegerField(verbose_name='举报ID', primary_key=True)
