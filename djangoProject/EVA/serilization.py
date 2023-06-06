@@ -5,7 +5,7 @@ from .models import User, Course, Evaluation, Teacher, Admin, Report, Announceme
 import json
 
 
-class Response(res):
+class Response:
 
     def get_response(self, res):
         if res == 0:

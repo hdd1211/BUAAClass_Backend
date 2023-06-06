@@ -6,8 +6,8 @@ from django.contrib.postgres.fields import ArrayField
 
 class Admin(models.Model):
     id = models.IntegerField(verbose_name='管理员ID', auto_created=True, primary_key=True)
-    username = models.CharField(verbose_name='管理员名', unique=True, null=False)
-    password = models.CharField(verbose_name='管理员密码', null=False)
+    username = models.CharField(verbose_name='管理员名', unique=True, null=False, max_length=20)
+    password = models.CharField(verbose_name='管理员密码', null=False, max_length=20)
 
 
 class User(models.Model):
@@ -26,7 +26,7 @@ class User(models.Model):
 class Course(models.Model):
     id = models.IntegerField(verbose_name='课程ID', primary_key=True, unique=True, auto_created=True)
     name = models.CharField(verbose_name='课程名', max_length=20, null=False, unique=True)
-    department = models.CharField(verbose_name='开课学院/单位')
+    department = models.CharField(verbose_name='开课学院/单位', max_length=50)
     credit = models.IntegerField(verbose_name='学分数')
     semester = ArrayField(models.IntegerField(verbose_name='课程学期', null=False, unique=True))
 
@@ -37,11 +37,11 @@ class Course(models.Model):
 
     review_ids = ArrayField(models.IntegerField(verbose_name=''))
 
-    teacher = models.CharField(verbose_name='教师名', max_length=20, null=False, unique=True)
-    Introduction = models.CharField(verbose_name='教师简介', null=False, unique=True)
+    teacher_name = models.CharField(verbose_name='教师名', max_length=20, null=False, unique=True)
+    Introduction = models.CharField(verbose_name='教师简介', null=False, unique=True, max_length=200)
 
-    evaluation = models.ManyToManyField('Evaluation')
-    teacher = models.ManyToManyField('Teacher')
+    evaluation_i = models.ManyToManyField('Evaluation', related_name='course_evaluations')
+    teacher_i = models.ManyToManyField('Teacher', related_name='teacher_evaluations')
 
 
 class Evaluation(models.Model):
@@ -50,44 +50,50 @@ class Evaluation(models.Model):
     time = models.DateTimeField(verbose_name='评价生成时间', auto_now_add=datetime.datetime.now())
     agree_cnt = models.IntegerField(verbose_name='赞数')
     disagree_cnt = models.IntegerField(verbose_name='踩数')
-    smester = models.CharField(verbose_name='学期')
+    smester = models.CharField(verbose_name='学期', max_length=20)
     rating_total = models.IntegerField(verbose_name='总评分')
     rating_quality = models.IntegerField(verbose_name='内容质量评分')
     rating_workload = models.IntegerField(verbose_name='工作量评分')
     rating_assesment = models.IntegerField(verbose_name='考核给分评分')
-    title = models.CharField(verbose_name='标题')
+    title = models.CharField(verbose_name='标题', max_length=20)
     text = models.CharField(verbose_name='评论内容', max_length=500)
 
-    course = models.ManyToManyField('Course', through=evaluationcourse)
+    course_i = models.ManyToManyField('Course', through='EvaluationCourse')
 
     def get_agree_cnt(self):
         return self.agree_cnt
 
 
-class evaluationcourse(models.Model):
-    Evaluation = models.ForeignKey('Evaluation')
-    Course = models.ForeignKey('Course')
+class EvaluationCourse(models.Model):
+    Evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
+    Course = models.ForeignKey(Course, on_delete=models.CASCADE)
 
 
 class Teacher(models.Model):
     id = models.IntegerField(verbose_name='教师ID', primary_key=True, auto_created=True, db_index=True)
-    name = models.CharField(verbose_name='教师名', )
-    course = models.ManyToManyField('course', through=teachercourse)
+    name = models.CharField(verbose_name='教师名', max_length=20)
+    course_i = models.ManyToManyField('Course', through='TeacherCourse')
 
 
-class teachercourse(models.Model):
-    teacher = models.ForeignKey('teacher')
-    course = models.ForeignKey('course')
+class TeacherCourse(models.Model):
+    teacher = models.ForeignKey('teacher', on_delete=models.CASCADE)
+    course = models.ForeignKey('course', on_delete=models.CASCADE)
 
 
 class Report(models.Model):
-    id = models.IntegerField(verbose_name='举报ID', primary_key=True, db_index=True)
-    userid = models.IntegerField(verbose_name='用户ID', db_index=True)
-    index = models.indexes()
-    content = models.CharField(verbose_name='反馈内容')
+    id = models.IntegerField(verbose_name='举报ID', primary_key=True)
+    userid = models.IntegerField(verbose_name='用户ID')
+    # index = models.index()
+    content = models.CharField(verbose_name='反馈内容', max_length=200)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['id']),
+            models.Index(fields=['userid']),
+        ]
 
 
 class Announcement(models.Model):
     id = models.IntegerField(verbose_name='公告ID', primary_key=True, db_index=True)
-    text = models.CharField(verbose_name='文本', )
+    text = models.CharField(verbose_name='文本', max_length=200)
     time = models.DateTimeField(verbose_name='公告创建时间', auto_now_add=True)

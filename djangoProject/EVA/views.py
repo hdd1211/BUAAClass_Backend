@@ -2,15 +2,18 @@
 import random
 
 from django.http import HttpResponse, JsonResponse
-from utils.response import wrap_response_data
+# from .utils.response import wrap_response_data
 from .models import User, Evaluation, Course, Report, Admin
-from serilization import LoginSerializer, RegisterSerializer, InteractionsSerializer, CourselistSerializer, \
+from .serilization import LoginSerializer, RegisterSerializer, InteractionsSerializer, CourselistSerializer, \
     AnnouncementSerilizer, EvaluationSerilizer, AdminLoginSerializer, CourseSerializer, DelcourseSerializer
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from functools import wraps
 from django.http import JsonResponse
-from .admin import app_admin
+from rest_framework.decorators import api_view
+
+
+# from .admin import app_admin
 
 
 def index(request):
@@ -113,7 +116,7 @@ def interaction(request):
 
 @custom_login_required
 @api_view()
-def courselist(request):
+def course_list(request):
     if request.method == 'POST':
         serilizer = CourselistSerializer(many=true)
         response_data = serilizer.data
@@ -182,16 +185,16 @@ def admin_login(request):
     return JsonResponse(response_data)
 
 
-@admin_login_required()
+@admin_login_required
 @api_view()
-def catalog_all(request):
+def admin_catalog_all(request):
     if request.method == 'POST':
         courselist(request)
 
 
-@admin_login_required()
+@admin_login_required
 @api_view()
-def get_by_name(request):
+def admin_catalog_get_by_name(request):
     if request.method == 'POST':
         name = request.POST.get(name)
         courses = Course.objects.filter(name=name)
@@ -199,32 +202,41 @@ def get_by_name(request):
         return response_data
 
 
-@admin_login_required()
+@admin_login_required
 @api_view()
-def get_by_id(request):
+def admin_catalog_get_by_id(request):
     if request.method == 'POST':
         id = request.POST.get(id)
-        course = Course.objects.get(id=id)
-        response_data = CourseSerializer(course)
-        return response_data
+        try:
+            course = Course.objects.get(id=id)
+            response_data = CourseSerializer(course)
+            return response_data
+        except Course.DoesNotExist:
+            model_data = model_to_dict(Course)
+            response_data = dict.fromkeys(model_data.keys(), None)
+            return response_data
 
 
-@admin_login_required()
+@admin_login_required
 @api_view()
-def get_by_type(request):
+def admin_catalog_get_by_type(request):
     if request.method == 'POST':
         type = request.POST.get(type)
-        courses = Course.objects.filter(type=type)
-        response_data = CourselistSerializer(courses)
-        return response_data
+        try:
+            courses = Course.objects.filter(type=type)
+            response_data = CourselistSerializer(courses)
+            return response_data
+        except Course.DoesNotExist:
+            model_data = model_to_dict(Course)
+            response_data = dict.fromkeys(model_data.keys(), None)
+            return response_data
 
 
-@admin_login_required()
+@admin_login_required
 @api_view()
-def del_course(request):
+def admin_catalog_del_course(request):
     if request.method == 'POST':
         id = request.POST.get(id)
-        course = Course.objects.get(id=id)
         try:
             course = Course.objects.get(id=id)
             course.delete()
@@ -234,6 +246,26 @@ def del_course(request):
             response_data = DelcourseSerializer(1)
             return response_data
 
+
+@admin_login_required
+@api_view()
+def admin_catalog_del_batch(request):
+    if request.method == 'POST':
+        ids = request.POST.getlist(id_batch)
+        i = 0
+        for id in ids:
+            admin_catalog_del_course(request.POST.get[i])
+            i += 1
+
+
+@admin_login_required
+@api_view()
+def admin_catalog_add_batch(request):
+    1
+# @api_view()
+# def add_course(request):
+#     if request.method=='POST':
+#         course =
 # def delete_user(request):
 #     user_name = request.POST.get('user_name')
 #     if (User.objects.filter(user_name=user_name).exists()):
@@ -269,12 +301,3 @@ def del_course(request):
 #         response_data = wrap_response_data(0)
 #         return JsonResponse(response_data)
 #
-#
-# # def check_user()
-#
-#
-# # college:
-#
-# # Course:
-# def add_course(request):
-#     name = request.POST.get('course_name')
