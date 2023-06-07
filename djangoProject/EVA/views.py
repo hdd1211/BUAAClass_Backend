@@ -1,5 +1,12 @@
 # Create your views here.
 import random
+import random
+from django.core.files import File
+from django.core.files.temp import NamedTemporaryFile
+from wordcloud import WordCloud
+from matplotlib import pyplot as plt
+from .models import Course
+from django.http import FileResponse
 
 from django.http import HttpResponse, JsonResponse
 # from .utils.response import wrap_response_data
@@ -14,7 +21,23 @@ from rest_framework.decorators import api_view
 
 
 # from .admin import app_admin
+def wordcloud(request):
+    # 首先，我们从数据库中随机选择十门课程
+    courses = list(Course.objects.all())
+    selected_courses = random.sample(courses, min(10, len(courses)))
 
+    # 然后，我们创建一个包含这些课程名的字符串
+    course_names = " ".join(course.name for course in selected_courses)
+
+    # 接下来，我们使用这个字符串创建一个词云
+    wordcloud = WordCloud(width=800, height=400).generate(course_names)
+
+    # 将词云保存为PNG图片
+    img_temp = NamedTemporaryFile(delete=True)
+    img_temp.write(wordcloud.to_image().tobytes())
+    img_temp.flush()
+
+    return FileResponse(open(img_temp.name, 'rb'), as_attachment=True, filename='course_wordcloud.png')
 
 def index(request):
     return HttpResponse("Hello, world. You're at the eva index.")
