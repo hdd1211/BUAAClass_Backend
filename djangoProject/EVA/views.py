@@ -1,4 +1,5 @@
 # Create your views here.
+
 import random
 import random
 from django.core.files import File
@@ -7,6 +8,7 @@ from wordcloud import WordCloud
 from matplotlib import pyplot as plt
 from .models import Course
 from django.http import FileResponse
+from openpyxl import load_workbook
 
 from django.http import HttpResponse, JsonResponse
 # from .utils.response import wrap_response_data
@@ -18,6 +20,40 @@ from django.shortcuts import render
 from functools import wraps
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
+
+
+# from .read import get_xlsx
+
+
+def get_xlsx():
+    print(1)
+    workbook = load_workbook(filename='F:\Project\Python\djangoProject1\class.xlsx')
+    print(333)
+    sheet = workbook['工作表1']
+    print(2)
+    # 遍历表格的所有行
+    for row in sheet.iter_rows(values_only=True):
+        # 遍历行中的每个单元格
+        print('1')
+        count = 0
+        for cell_value in row:
+            count += 1
+            if count == 1:
+                name = cell_value
+            elif count == 4:
+                department = cell_value
+            elif count == 6:
+                teacher_name = cell_value
+            elif count == 9:
+                id = cell_value
+
+        # 检查课程是否已经存在
+        course, created = Course.objects.get_or_create(
+            id=id,
+            defaults={'name': name, 'department': department, 'teacher_name': teacher_name}
+        )
+        if created:
+            print(f'Created new course: {course.id}')
 
 
 # from .admin import app_admin
@@ -38,6 +74,7 @@ def wordcloud(request):
     img_temp.flush()
 
     return FileResponse(open(img_temp.name, 'rb'), as_attachment=True, filename='course_wordcloud.png')
+
 
 def index(request):
     return HttpResponse("Hello, world. You're at the eva index.")
@@ -101,9 +138,11 @@ def register(request):
     return JsonResponse(reponse_data)
 
 
-# @api_view()
-# def get_by_id(request):
-#     1
+@api_view()
+def review(request):
+    if request.method == 'POST':
+        id = request.POST.get(course_id)
+
 
 @custom_login_required
 @api_view()
@@ -137,13 +176,14 @@ def interaction(request):
     return JsonResponse(response_data)
 
 
-@custom_login_required
-@api_view()
+@api_view(['GET'])
 def course_list(request):
-    if request.method == 'POST':
-        serilizer = CourselistSerializer(many=true)
-        response_data = serilizer.data
-    return JsonResponse(response_data)
+    if request.method == 'GET':
+        get_xlsx()
+        course_data = get_courselist()  # 获取课程列表数据
+        serializer = CourselistSerializer(course_data, many=True)  # 创建序列化器实例
+        return Response(serializer.data)  # 返回序列化的数据
+    return JsonResponse("response_data")
 
 
 @custom_login_required
@@ -285,6 +325,106 @@ def admin_catalog_del_batch(request):
 @api_view()
 def admin_catalog_add_batch(request):
     1
+
+
+@api_view(['GET'])
+def get_all_reviews(request):
+    # 从数据库中获取所有评论
+    reviews = Review.objects.all()
+    # 使用序列化器将评论对象转换为JSON格式
+    serializer = ReviewSerializer(reviews, many=True)
+    # 将结果返回给客户端
+    return Response({"review_list": serializer.data})
+
+
+@api_view(['GET'])
+def get_reviews_by_status(request, status):
+    # 从数据库中筛选出特定状态的评论
+    reviews = Evaluation.objects.filter(status=status)
+    # 使用序列化器将评论对象转换为JSON格式
+    serializer = ReviewSerializer(reviews, many=True)
+    # 将结果返回给客户端
+    return Response({"review_list": serializer.data})
+
+
+@api_view(['GET'])
+def get_reviews_by_user(request, user_id):
+    # 从数据库中筛选出由特定用户发表的评论
+    reviews = Review.objects.filter(user_id=user_id)
+    # 使用序列化器将评论对象转换为JSON格式
+    serializer = ReviewSerializer(reviews, many=True)
+    # 将结果返回给客户端
+    return Response({"review_list": serializer.data})
+
+
+@api_view(['GET'])
+def get_reviews_by_course(request, course_id):
+    # 从数据库中筛选出针对特定课程的评论
+    reviews = Review.objects.filter(course_id=course_id)
+    # 使用序列化器将评论对象转换为JSON格式
+    serializer = ReviewSerializer(reviews, many=True)
+    # 将结果返回给客户端
+    return Response({"review_list": serializer.data})
+
+
+@api_view(['GET'])
+def get_reviews_by_word(request, word):
+    # 使用Q对象进行复杂查询，筛选出评论标题或正文包含特定关键字的评论
+    reviews = Review.objects.filter(Q(title__contains=word) | Q(content__contains=word))
+    # 使用序列化器将评论对象转换为JSON格式
+    serializer = ReviewSerializer(reviews, many=True)
+    # 将结果返回给客户端
+    return Response({"review_list": serializer.data})
+
+
+@api_view(['DELETE'])
+def del_review(request, id):
+    try:
+        # 获取指定id的评论
+        review = Review.objects.get(id=id)
+        # 将评论的状态改为已删除
+        review.status = 2  # 假设已删除的状态码为2
+        review.save()
+        # 返回成功的结果
+        return Response({"res": 0})
+    except Review.DoesNotExist:
+        # 如果指定id的评论不存在，返回失败的结果
+        return Response({"res": 1})
+
+
+@api_view(['DELETE'])
+def del_batch(request):
+    try:
+        # 从请求体中获取要删除的评论id列表
+        id_batch = request.data.get('id_batch', [])
+        # 找到所有指定id的评论并修改它们的状态
+        Review.objects.filter(id__in=id_batch).update(status=2)  # 假设已删除的状态码为2
+        # 返回成功的结果
+        return Response({"res": 0})
+    except Exception as e:
+        # 如果出错，返回失败的结果
+        return Response({"res": 1})
+
+
+@api_view(['GET'])
+def get_review_by_id(request):
+    # 获取URL参数中的id
+    review_id = request.GET.get('id', None)
+
+    if review_id is None:
+        # 如果没有提供id，返回错误结果
+        return Response({"error": "Missing 'id' parameter."}, status=400)
+
+    try:
+        # 根据id获取评论
+        review = Review.objects.get(id=review_id)
+        # 序列化评论对象
+        serializer = ReviewSerializer(review)
+        # 返回评论信息
+        return Response(serializer.data)
+    except Review.DoesNotExist:
+        # 如果找不到评论，返回错误结果
+        return Response({"error": "Review not found."}, status=404)
 # @api_view()
 # def add_course(request):
 #     if request.method=='POST':

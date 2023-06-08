@@ -40,6 +40,18 @@ class LoginSerializer(serializers.Serializer):
         return data
 
 
+class ReviewSerializer(serializers.Serializer):
+    class Meta:
+        model = Evaluation
+        fields = '__all__'
+
+    def get_review(self, id):
+        reviews = Evaluation.objects.all()
+        serializer = ReviewSerializer(reviews)
+        data = serializer.data
+        return data
+
+
 class RegisterSerializer(serializers.Serializer):
     res = Response()
 
@@ -117,7 +129,7 @@ class AdminLoginSerializer(serializers.Serializer):
         return data
 
 
-class CourseSerializer(serializers.Serializer):
+class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = '__all__'
